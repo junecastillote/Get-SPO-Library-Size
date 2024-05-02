@@ -2,6 +2,12 @@
 
 PowerShell script to retrieve SPO library size including version history
 
+## Requirements
+
+* PnP.PowerShell module
+* PowerShell 7.x
+* User credential must be a Site Collection Admin on the target site
+
 ## Examples
 
 ### Get library size summary
