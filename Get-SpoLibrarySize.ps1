@@ -1,7 +1,7 @@
 
 <#PSScriptInfo
 
-.VERSION 0.1
+.VERSION 0.2
 
 .GUID 7354962a-7ceb-4f6c-8910-d603fec54bac
 
@@ -53,6 +53,8 @@ param (
     $RawDataCsv
 )
 
+$PSStyle.Progress.View = 'Classic'
+
 ## Test if the output path is valid
 if ($RawDataCsv) {
     $filePath = (Split-Path $RawDataCsv -Parent)
@@ -84,9 +86,21 @@ catch {
 ## Create a generic list
 $result = [System.Collections.Generic.List[System.Object]]@()
 
-Get-PnPListItem -List $LibraryName -PageSize 500 | Where-Object { $_.FieldValues.FileLeafRef -like "*.*" } | ForEach-Object {
-    $FileSizeinKB = [Math]::Round(($_.FieldValues.File_x0020_Size / 1KB), 2)
-    $File = Get-PnPProperty -ClientObject $_ -Property File
+Write-Verbose "Getting all files in '$($LibraryName)' in '$($SiteUrl)'..."
+$listItems = @(Get-PnPListItem -List $LibraryName -PageSize 500 | Where-Object { $_.FieldValues.FileLeafRef -like "*.*" })
+Write-Verbose "Total files = $($listItems.Count)"
+
+if ($listItems.Count -eq 0) {
+    Write-Verbose "There are ZERO files in this document library."
+    return $null
+}
+
+for ($i = 0 ; $i -lt $($listItems.Count) ; $i++) {
+    $percentComplete = (($i + 1) * 100) / $($listItems.Count)
+    Write-Progress -Activity "Site: $($SiteUrl) | Library: $($LibraryName) | File: [$($listItems[$i].FieldValues.FileLeafRef)]" -Status "Progress: $($i+1) of $($listItems.Count) ($([math]::round($percentComplete,2))%)" -PercentComplete $percentComplete -ErrorAction SilentlyContinue
+    Write-Verbose $($listItems[$i].FieldValues.FileLeafRef)
+    $FileSizeinKB = [Math]::Round(($listItems[$i].FieldValues.File_x0020_Size / 1KB), 2)
+    $File = Get-PnPProperty -ClientObject $listItems[$i] -Property File
     $Versions = Get-PnPProperty -ClientObject $File -Property Versions
     $VersionSize = $Versions | Measure-Object -Property Size -Sum | Select-Object -expand Sum
     $VersionSizeinKB = [Math]::Round(($VersionSize / 1KB), 2)
@@ -95,8 +109,8 @@ Get-PnPListItem -List $LibraryName -PageSize 500 | Where-Object { $_.FieldValues
     $itemObject = (New-Object PSObject -Property ([Ordered]@{
                 "Site Url"             = $SiteUrl
                 "Library Name"         = $LibraryName
-                "File Name"            = $_.FieldValues.FileLeafRef
-                "File URL"             = $_.FieldValues.FileRef
+                "File Name"            = $listItems[$i].FieldValues.FileLeafRef
+                "File URL"             = $listItems[$i].FieldValues.FileRef
                 "Versions"             = $Versions.Count
                 "File Size (KB)"       = $FileSizeinKB
                 "Version Size (KB)"    = $VersionSizeinKB
@@ -116,7 +130,7 @@ New-Object PSObject -Property ([Ordered]@{
     })
 
 if ($RawDataCsv) {
-    $result | Export-Csv -NoTypeInformation -Path $RawDataCsv -ErrorAction Stop -Force
+    $result | Export-Csv -NoTypeInformation -Path $RawDataCsv -Append -ErrorAction Stop -Force
 }
 
 
