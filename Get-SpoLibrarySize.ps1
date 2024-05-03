@@ -1,7 +1,7 @@
 
 <#PSScriptInfo
 
-.VERSION 0.2
+.VERSION 0.3
 
 .GUID 7354962a-7ceb-4f6c-8910-d603fec54bac
 
@@ -38,6 +38,10 @@
  PowerShell script to retrieve SPO library size including version history
 
 #>
+
+#Requires -PSEdition Core
+#Requires -Modules @{ ModuleName="PnP.PowerShell"; ModuleVersion="2.3.0" }
+
 [CmdletBinding()]
 param (
     [Parameter(Mandatory)]
@@ -50,7 +54,11 @@ param (
 
     [Parameter()]
     [String]
-    $RawDataCsv
+    $RawDataCsv,
+
+    [Parameter()]
+    [Switch]
+    $Force
 )
 
 $PSStyle.Progress.View = 'Classic'
