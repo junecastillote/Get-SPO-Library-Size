@@ -57,8 +57,19 @@ param (
     $RawDataCsv,
 
     [Parameter()]
-    [Switch]
-    $Force
+    [ValidateSet(
+        'Form Templates',
+        'Pages',
+        'Preservation Hold Library',
+        'Site Assets',
+        'Site Pages',
+        'Images',
+        'Site Collection Documents',
+        'Site Collection Images',
+        'Style Library'
+    )]
+    [string[]]
+    $IncludeSystemLibrary
 )
 
 $PSStyle.Progress.View = 'Classic'
@@ -119,6 +130,8 @@ for ($i = 0 ; $i -lt $($listItems.Count) ; $i++) {
                 "Library Name"         = $LibraryName
                 "File Name"            = $listItems[$i].FieldValues.FileLeafRef
                 "File URL"             = $listItems[$i].FieldValues.FileRef
+                "Created By"           = ($($listItems[$i].FieldValues.Created_x0020_By).split('|'))[-1]
+                "Modified"             = $listItems[$i].FieldValues.Modified
                 "Versions"             = $Versions.Count
                 "File Size (KB)"       = $FileSizeinKB
                 "Version Size (KB)"    = $VersionSizeinKB
